@@ -52,7 +52,7 @@ def load_weather(city):
 
 
 #function to find latest month of egauge data
-def find_egauge_dates(dataid, final_date=None):
+def find_egauge_dates(dataid, length=30, final_date=None):
 
     df = pickle.load(open('pickle_files/df_{}.p'.format(dataid),'rb'))
 
@@ -68,21 +68,9 @@ def find_egauge_dates(dataid, final_date=None):
         final_date = max_date
 
     end_date = datetime.strptime('{}-{}-{} 00:00:00'.format(final_date.year, final_date.month, final_date.day), '%Y-%m-%d %H:%M:%S')
-    time_delta = timedelta(days=30)
+    time_delta = timedelta(days=length)
     start_date = end_date - time_delta
 
     return start_date, end_date
 
 
-#function to create training and testing set
-def create_train_test(data, start_train, end_train, start_test, end_test):
-
-    df_train = data.loc[start_train:end_train, :]
-    df_test = data.loc[start_test:end_test, :]
-
-    start = datetime.strptime(start_test, '%Y-%m-%d %H:%M:%S')
-    date_list = [start + relativedelta(hours=x) for x in range(0,24)] #test set will always have 24 hours
-    future = pd.DataFrame(index=date_list, columns= df_train.columns)
-    df_train = pd.concat([df_train, future])
-
-    return df_train, df_test
