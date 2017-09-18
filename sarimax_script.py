@@ -70,7 +70,7 @@ def fit_exog_arima(data, weather, building_id, length=1, total_length=30, test_l
     start_train, end_train, start_test, end_test = find_dates(building_id, length=length, total_length=total_length)
     df_train, df_test = create_train_test(data, start_train, end_train, start_test, end_test, test_length)
     df_exog = add_exog(df_train, weather, start_train, end_test)
-    exogenous = df_exog.loc[start_train:,['Weekend','Temperature','Humidity']].astype(float)
+    exogenous = df_exog.loc[start_train:,['Weekend','Temperature','Humidity','car1']].astype(float)
     endogenous = df_exog.loc[:,'Hourly_Usage'].astype(float)
 
 #    low_aic = gridsearch_arima(endogenous,exogenous)
@@ -154,3 +154,53 @@ def plot_forecast(data, datapoints):
     plt.plot(data['Hourly_Usage'][datapoints:])
     plt.plot(data['forecast'])
     plt.legend()
+
+
+#function to find mean car charge
+def mean_car_charge(data, start, end):
+    car_charge = {}
+    for index in data.Time_Index.unique():
+        car_charge[index] = np.mean(data[data.Time_Index==index].car1)
+
+    return car_charge
+
+
+#function to add all exogenous variables
+def create_exog_endo(data, weather, building_id, length=1, total_length=30):
+
+    start_train, end_train, start_test, end_test = find_dates(building_id, length, total_length)
+    df_train, df_test = create_train_test(data, start_train, end_train, start_test, end_test, 24*length)
+
+    car_charge = mean_car_charge(data, start_train,end_train)
+
+    df_train['Time_Index'] = df_train.index.weekday_name+ df_train.index.hour.astype(str)
+    df_train['Temperature'] = weather.loc[start_train:end_test, 'temperature']
+    df_train['Humidity'] = weather.loc[start_train:end_test, 'humidity']
+
+    for time in df_train.loc[start_test:end_test,:].index:
+        df_train.loc[time,'car1'] = car_charge[df_train.loc[time,'Time_Index']]
+
+    #fill missing values with mean
+    df_train['Temperature'] = df_train.Temperature.fillna(np.mean(df_train['Temperature']))
+    df_train['Humidity'] = df_train.Humidity.fillna(np.mean(df_train['Humidity']))
+
+    exogenous = df_train.loc[start_train:,['Temperature','Humidity','car1']].astype(float)
+    endogenous = df_train.loc[:,'Hourly_Usage'].astype(float)
+
+    return df_train, exogenous, endogenous
+
+
+#function to fit SARIMAX model with create_exog_endo
+def fit_exog_arima_new(exogenous, endogenous):
+
+    low_aic = gridsearch_arima(endogenous,exogenous)
+    arima_model = sm.tsa.statespace.SARIMAX(endog=endogenous,
+                                  exog = exogenous,
+                                  trend=None,
+                                  order=low_aic[0],
+                                  seasonal_order=low_aic[1],
+                                  enforce_stationarity=False,
+                                  enforce_invertibility=False)
+    arima_exog_results = arima_model.fit()
+
+    return arima_exog_results

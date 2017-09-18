@@ -9,6 +9,7 @@ from dateutil.relativedelta import *
 import statsmodels.tsa.api as smt
 import seaborn as sns
 from sklearn.metrics import mean_squared_error
+from arima_script import *
 import pickle
 
 
@@ -26,6 +27,15 @@ def is_weekend(row):
         return 1
     else:
         return 0
+
+#function to find mean car charge
+def mean_car_charge(data, start, end):
+    car_charge = {}
+    for index in data.Time_Index.unique():
+        car_charge[index] = np.mean(data[data.Time_Index==index].car1)
+
+    return car_charge
+
 
 
 #load dataframe for building
@@ -73,5 +83,6 @@ def find_egauge_dates(dataid, length=30, final_date=None):
     start_date = end_date - time_delta
 
     return start_date, end_date
+
 
 
