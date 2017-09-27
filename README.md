@@ -13,7 +13,7 @@ to inform users of their energy consumption behaviors and encourage them to deve
 
 # Data:
 
-The data was granted by the Pecan Street Dataport, which operates on a PostgreSQL database. The Dataport contains
+The data was provided by the Pecan Street Dataport, which operates on a PostgreSQL database. The Dataport contains
 information on energy and water consumption of individual building units. This project solely focuses on electricity
 consumption data measured in kWh at an hourly level. It also includes detailed information on energy consumption
 due to specific appliances as well as hourly data on various weather features.
